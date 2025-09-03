@@ -43,7 +43,7 @@ Before beginning deployment, ensure you have:
 
 1. **Navigate to the deployment page:**
   
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-ui%2Fmain%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-ui%2Fmain%2FcreateUiDefinition.json)
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2FcreateUiDefinition.json)
 
 2. **Configure basic settings:**
    ```
@@ -83,7 +83,7 @@ Before beginning deployment, ensure you have:
 ```bash
 az deployment sub create \
   --location eastus \
-  --template-uri https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-ui/main/azuredeploy.json \
+  --template-uri https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json \
   --parameters \
     rgName="CISO-RG-SENTINEL" \
     workspaceName="CISO-WS-SENTINEL" \
@@ -106,7 +106,7 @@ $params = @{
 
 New-AzSubscriptionDeployment `
   -Location "eastus" `
-  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-ui/main/azuredeploy.json" `
+  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json" `
   @params
 ```
 
@@ -131,7 +131,7 @@ New-AzSubscriptionDeployment `
 
 1. **Navigate to deployment:**
    
-   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-mdvm%2Fmaster%2FazureDeploy.json)
+   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
 
 2. **Configure settings:**
    ```
@@ -354,7 +354,7 @@ Get-AzOperationalInsightsWorkspace -ResourceGroupName "CISO-RG-SENTINEL"
 1. **To update Function App code:**
    ```powershell
    # Download latest function package
-   Invoke-WebRequest -Uri "https://github.com/J-HEARD/sentinel-deploy-mdvm/releases/latest/download/functionPackage.zip" -OutFile "functionPackage.zip"
+   Invoke-WebRequest -Uri "https://github.com/J-HEARD/Sentinel-Infra-Deploy/releases/latest/download/functionPackage.zip" -OutFile "functionPackage.zip"
    
    # Deploy to Function App
    Publish-AzWebApp -ResourceGroupName "CISO-RG-SENTINEL" -Name "func-mdvm-[unique]" -ArchivePath "functionPackage.zip"

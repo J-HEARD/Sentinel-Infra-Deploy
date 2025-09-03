@@ -1,5 +1,5 @@
 param(
-    [string] $PackageUri = 'https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-mdvm/master/functionPackage.zip',
+    [string] $PackageUri = 'https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-mdvm/functionPackage.zip',
     [string] $ResourceGroupName,
     [string] $FunctionAppName
 )

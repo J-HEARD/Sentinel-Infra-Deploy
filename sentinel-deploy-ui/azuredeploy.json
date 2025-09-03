@@ -107,7 +107,7 @@
             "metadata": {
                 "description": "The location of linked templates"
             },
-            "defaultValue": "https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-ui/main"
+            "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui"
         }
     },
     "variables": {},

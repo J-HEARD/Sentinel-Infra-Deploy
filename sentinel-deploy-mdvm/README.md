@@ -1,6 +1,6 @@
 # Microsoft Defender Vulnerability Management Sentinel Data Connector
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-mdvm%2Fmaster%2FazureDeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
 
 This custom data connector uses a Function App to pull Microsoft Defender Vulnerability Management (MDVM) data from the M365 Defender API and ingests into the selected Log Analytics workspace via the Azure Monitor DCR API. Public NIST CVE information is also ingested to enrich the MDVM data. A custom workbook is also included to visualize the data. Six custom tables are created in the workspace:
 - *MDVMCVEKB_CL* - MDVM CVE knowledge base.

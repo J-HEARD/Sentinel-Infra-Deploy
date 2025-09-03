@@ -30,14 +30,14 @@ The following data connectors can be enabled during deployment:
 
 ### Deploy via Azure Portal
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-ui%2Fmain%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2Fsentinel-deploy-ui%2Fmain%2FcreateUiDefinition.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2FcreateUiDefinition.json)
 
 ### Deploy via Azure CLI
 
 ```bash
 az deployment sub create \
   --location <location> \
-  --template-uri https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-ui/main/azuredeploy.json \
+  --template-uri https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json \
   --parameters rgName=<resourceGroupName> workspaceName=<workspaceName>
 ```
 
@@ -46,7 +46,7 @@ az deployment sub create \
 ```powershell
 New-AzSubscriptionDeployment `
   -Location <location> `
-  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/sentinel-deploy-ui/main/azuredeploy.json" `
+  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json" `
   -rgName <resourceGroupName> `
   -workspaceName <workspaceName>
 ```
