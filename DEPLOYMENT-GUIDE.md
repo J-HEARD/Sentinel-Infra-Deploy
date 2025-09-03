@@ -1,4 +1,4 @@
-# 📘 Microsoft Sentinel Infrastructure Deployment Guide
+# 📘 Microsoft Sentinel Infrastructure Deployment Guide 📘
 
 This guide provides detailed step-by-step instructions for deploying the complete Microsoft Sentinel infrastructure solution.
 
@@ -14,7 +14,7 @@ This guide provides detailed step-by-step instructions for deploying the complet
 
 ---
 
-## 🔍 Pre-Deployment Checklist
+## 🔍 Pre-Deployment Checklist 🔍
 
 Before beginning deployment, ensure you have:
 
@@ -37,7 +37,7 @@ Before beginning deployment, ensure you have:
 
 ---
 
-## 🚀 Phase 1: Core Sentinel Deployment
+## Phase 1: Core Sentinel Deployment
 
 ### Step 1: Deploy Core Infrastructure via Portal
 
@@ -125,7 +125,7 @@ New-AzSubscriptionDeployment `
 
 ---
 
-## 🔧 Phase 2: MDVM Connector Deployment
+## Phase 2: MDVM Connector Deployment
 
 ### Step 1: Deploy MDVM Infrastructure
 
@@ -225,7 +225,7 @@ New-AzSubscriptionDeployment `
 
 ---
 
-## ⚙️ Post-Deployment Configuration
+## Post-Deployment Configuration
 
 ### Configure Analytics Rules
 
@@ -256,7 +256,7 @@ New-AzSubscriptionDeployment `
 
 ---
 
-## ✅ Verification and Testing
+## Verification and Testing
 
 ### Phase 1 Verification
 
@@ -294,7 +294,7 @@ New-AzSubscriptionDeployment `
 
 ---
 
-## 🔨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues and Solutions
 
@@ -331,7 +331,7 @@ Get-AzOperationalInsightsWorkspace -ResourceGroupName "CISO-RG-SENTINEL"
 
 ---
 
-## 🔄 Maintenance
+## Maintenance
 
 ### Daily Tasks
 - Monitor Function App executions
@@ -363,14 +363,6 @@ Get-AzOperationalInsightsWorkspace -ResourceGroupName "CISO-RG-SENTINEL"
 2. **To update ARM templates:**
    - Redeploy using the same parameters
    - ARM will update only changed resources
-
----
-
-## 📞 Support Resources
-
-- **Microsoft Sentinel Community:** https://techcommunity.microsoft.com/t5/microsoft-sentinel/bd-p/MicrosoftSentinel
-- **GitHub Issues:** Report issues on the respective GitHub repositories
-- **Microsoft Support:** Open a support ticket for Azure-related issues
 
 ---
 
