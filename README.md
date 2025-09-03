@@ -136,12 +136,6 @@ The solution provides:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Credit
-
-- Core Sentinel deployment design by J-HEARD
-- MDVM connector originally developed by Alex Anders
-- Community contributions and feedback
-
 ---
 
 For detailed deployment instructions, see the [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)
