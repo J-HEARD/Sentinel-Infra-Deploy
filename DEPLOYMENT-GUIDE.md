@@ -129,9 +129,17 @@ New-AzSubscriptionDeployment `
 
 ### Step 1: Deploy MDVM Infrastructure
 
-1. **Navigate to deployment:**
-   
+> **Important:** If you encounter Azure Container Instance quota issues, use Option B below.
+
+1. **Choose your deployment method:**
+
+   **Option A: Standard Deployment** (Requires Container Instance quota)
    [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
+
+   **Option B: Deploy Without Function Code** (No Container Instance required)
+   [![Deploy MDVM Without ACI](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy-NoFunctionDeploy.json)
+   
+   > If using Option B, you'll need to manually deploy the function code after infrastructure deployment (see instructions below).
 
 2. **Configure settings:**
    ```
@@ -202,6 +210,32 @@ New-AzSubscriptionDeployment `
 3. **Verify permissions:**
    - Check for success messages in PowerShell output
    - All three permissions should show as "Assigned" or "Already assigned"
+
+### Step 2a: Deploy Function Code Manually (Only for Option B)
+
+If you used Option B above, follow these steps to deploy the function code:
+
+1. **Open Azure Cloud Shell** or PowerShell
+
+2. **Run these commands:**
+   ```powershell
+   # Set your resource group name
+   $resourceGroupName = "CISO-RG-SENTINEL"  # Replace with your RG name
+   
+   # Get the Function App name
+   $functionAppName = (Get-AzFunctionApp -ResourceGroupName $resourceGroupName | Where-Object {$_.Name -like "fa-mdvm-*"}).Name
+   
+   # Download and deploy the function package
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-mdvm/functionPackage.zip" -OutFile "functionPackage.zip"
+   Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -ArchivePath "./functionPackage.zip" -Force
+   
+   Write-Host "Function code deployed successfully to $functionAppName" -ForegroundColor Green
+   ```
+
+3. **Verify deployment:**
+   - Go to the Function App in Azure Portal
+   - Navigate to Functions > GetMDVMData
+   - You should see the function code
 
 ### Step 3: Initial Function Execution
 
