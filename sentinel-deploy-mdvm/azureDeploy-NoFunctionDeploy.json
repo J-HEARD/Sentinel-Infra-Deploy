@@ -72,20 +72,8 @@
         "description": "Deploy Azure workbooks to help visualize the MDVM data."
       }
     },
-    "DeployFunctionCode": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "This parameter is set to false for non-ACI deployment. Function code must be deployed manually after infrastructure deployment."
-      }
-    },
-    "RepoUri": {
-      "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm",
-      "metadata": {
-        "description": "GitHub repo where Azure Function package and post deployment script is located. Leave the default value unless you are using content from a different location. This is not applicable if the Deploy Function Code parameter is set to false."
-      }
-    },
+
+
     "EnableElasticPremiumPlan": {
       "type": "bool",
       "defaultValue": false,
@@ -2044,7 +2032,7 @@
               }
             },
             {
-              "condition": "[equals(parameters('DeployFunctionCode'), true())]",
+              "condition": false,
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "scope": "[format('Microsoft.Web/sites/{0}', parameters('FunctionAppName'))]",
@@ -2072,7 +2060,7 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName')))]",
+
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]",
         "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]",
         "[resourceId('Microsoft.Resources/deployments', 'privateNetwork')]",
@@ -2203,7 +2191,7 @@
               }
             },
             {
-              "condition": "[equals(parameters('DeployFunctionCode'), true())]",
+              "condition": false,
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "scope": "[format('Microsoft.Web/sites/{0}', parameters('FunctionAppName'))]",
@@ -2231,7 +2219,7 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName')))]",
+
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]",
         "[resourceId('Microsoft.Resources/deployments', 'functionAppDeploy')]",
         "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]",
