@@ -125,8 +125,7 @@
   "variables": {
     "deploymentVersion": "1.1.2",
     "location": "[resourceGroup().location]",
-    "functionAppPackageUri": "[format('{0}/functionPackage.zip', parameters('RepoUri'))]",
-    "deploymentScriptUri": "[format('{0}/deploymentScript.ps1', parameters('RepoUri'))]",
+
     "roleIdOwner": "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "roleIdStorageBlobDataOwner": "/providers/Microsoft.Authorization/roleDefinitions/b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
     "appSettingsFilesKv": [
@@ -1954,7 +1953,7 @@
             "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
           },
           "DeployFunctionCode": {
-            "value": "[parameters('DeployFunctionCode')]"
+            "value": false
           },
           "UserAssignedMiPrincipalId": {
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
@@ -2113,7 +2112,7 @@
             "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
           },
           "DeployFunctionCode": {
-            "value": "[parameters('DeployFunctionCode')]"
+            "value": false
           },
           "UserAssignedMiPrincipalId": {
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
@@ -2560,7 +2559,7 @@
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
           },
           "DeployCode": {
-            "value": "[parameters('DeployFunctionCode')]"
+            "value": false
           }
         },
         "template": {
