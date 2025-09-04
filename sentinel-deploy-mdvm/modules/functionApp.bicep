@@ -21,9 +21,18 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     serverFarmId: HostingPlanId
     httpsOnly: true
     siteConfig: {
-      appSettings: AppSettings
+      appSettings: union(AppSettings, [
+        {
+          name: 'FUNCTIONS_EXTENSION_VERSION'
+          value: '~4'
+        }
+        {
+          name: 'FUNCTIONS_WORKER_RUNTIME'
+          value: 'powershell'
+        }
+      ])
       powerShellVersion: '7.4'
-      minTlsVersion: '1.2' 
+      minTlsVersion: '1.2'
       ftpsState: 'Disabled'
       alwaysOn: false
       publicNetworkAccess: 'Enabled'
