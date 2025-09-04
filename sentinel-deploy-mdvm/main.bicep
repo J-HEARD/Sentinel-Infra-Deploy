@@ -113,8 +113,12 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: FunctionAppName
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'B1'
+    tier: 'Basic'
+    capacity: 1
+  }
+  properties: {
+    reserved: false
   }
 }
 

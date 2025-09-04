@@ -34,7 +34,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       powerShellVersion: '7.4'
       minTlsVersion: '1.2'
       ftpsState: 'Disabled'
-      alwaysOn: false
+      alwaysOn: true
       publicNetworkAccess: 'Enabled'
       cors: {
         allowedOrigins: [

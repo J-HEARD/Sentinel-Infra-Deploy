@@ -1,5 +1,5 @@
 ﻿# Input bindings are passed in via param block.
-param($Timer)
+param($Timer, $req, $TriggerMetadata)
 
 #Define global variables/parameters.
 #$ErrorActionPreference = 'Stop'
@@ -273,4 +273,24 @@ if ($tableStats | Where-Object Mismatch -eq $true) {
 }
 else {
     Write-Host ("All data has been successfully written to Azure Monitor. Per table details are below: `n" + ($tableStats | Format-Table | Out-String))
+}
+
+# Lightweight HTTP trigger wrapper for in-portal test runs
+param($Request, $TriggerMetadata)
+
+Write-Output "MDVM Function Triggered for test validation"
+
+# Call into the core MDVM logic (already defined in run.ps1 main body)
+try {
+    $result = main
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = 200
+        Body       = $result
+    })
+}
+catch {
+    Push-OutputBinding -Name Response -Value ([HttpResponseContext]@{
+        StatusCode = 500
+        Body       = "MDVM Function error: $($_.Exception.Message)"
+    })
 }
