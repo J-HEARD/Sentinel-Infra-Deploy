@@ -3,8 +3,6 @@ param Location string
 param UserAssignedMiId string
 param UserAssignedMiPrincipalId string
 param HostingPlanId string
-param EnablePrivateNetworking bool
-param FunctionAppSubnetId string = ''
 param AppSettings array
 param DeployFunctionCode bool
 param RoleIdOwner string
@@ -25,9 +23,6 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     httpsOnly: true
     clientCertEnabled: true
     clientCertMode: 'OptionalInteractiveUser'
-    virtualNetworkSubnetId: EnablePrivateNetworking == true ? FunctionAppSubnetId : (null)
-    vnetContentShareEnabled: EnablePrivateNetworking == true ? true : false
-    vnetRouteAllEnabled: EnablePrivateNetworking == true ? true : false 
     siteConfig: {
       appSettings: AppSettings
       powerShellVersion: '7.4'

@@ -72,48 +72,26 @@
         "description": "Deploy Azure workbooks to help visualize the MDVM data."
       }
     },
-
-
-    "EnableElasticPremiumPlan": {
+    "DeployFunctionCode": {
       "type": "bool",
-      "defaultValue": false,
+      "defaultValue": true,
       "metadata": {
-        "description": "Recommended when processing a large number of events but increases cost."
+        "description": "Use the Azure Deployment Script resource to automatically deploy the Function App code. This requires the Microsoft.ContainerInstance resource provider to be registred on the subsription."
       }
     },
-    "EnablePrivateNetworking": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Enabling Private Networking will restrict public access to the Function App for additional security. A Virtual Network with the below address space and subnets, along with an NSG, Private Endpoints, and Private DNS Zones will be deployed to support this configuration. This will also leverage the Dedicated App Service Premium plan (P0v3) instead of the Consumption plan (If the Elastic Premium Plan is selected, it will be used instead of the Dedicated App Service Premium Plan.)."
-      }
-    },
-    "PrivateNetworkAddressSpace": {
+    "RepoUri": {
       "type": "string",
-      "defaultValue": "10.0.0.0/24",
+      "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm",
       "metadata": {
-        "description": "If enabling Private Networking, choose the desired address space for the Virtual Network or leave the default."
+        "description": "GitHub repo where Azure Function package and post deployment script is located. Leave the default value unless you are using content from a different location. This is not applicable if the Deploy Function Code parameter is set to false."
       }
     },
-    "PrivateEndpointsSubnet": {
-      "type": "string",
-      "defaultValue": "10.0.0.0/26",
-      "metadata": {
-        "description": "If enabling Private Networking, choose the desired address space for the Private Endpoints subnet or leave the default. Do not make subnets any smaller than the default."
-      }
-    },
-    "FunctionAppSubnet": {
-      "type": "string",
-      "defaultValue": "10.0.0.64/26",
-      "metadata": {
-        "description": "If enabling Private Networking, choose the desired address space for the Function App vnet integration subnet or leave the default. Do not make subnets any smaller than the default."
-      }
-    }
   },
   "variables": {
     "deploymentVersion": "1.1.2",
     "location": "[resourceGroup().location]",
-
+    "functionAppPackageUri": "[format('{0}/functionPackage.zip', parameters('RepoUri'))]",
+    "deploymentScriptUri": "[format('{0}/deploymentScript.ps1', parameters('RepoUri'))]",
     "roleIdOwner": "/providers/Microsoft.Authorization/roleDefinitions/8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
     "roleIdStorageBlobDataOwner": "/providers/Microsoft.Authorization/roleDefinitions/b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
     "appSettingsFilesKv": [
@@ -141,13 +119,13 @@
       },
       "properties": {
         "allowBlobPublicAccess": false,
-        "publicNetworkAccess": "[if(equals(parameters('EnablePrivateNetworking'), true()), 'Disabled', 'Enabled')]",
+        "publicNetworkAccess": "Enabled",
         "minimumTlsVersion": "TLS1_2",
         "networkAcls": {
-          "defaultAction": "[if(equals(parameters('EnablePrivateNetworking'), true()), 'Deny', 'Allow')]",
+          "defaultAction": "Allow",
           "bypass": "AzureServices"
         },
-        "allowSharedKeyAccess": "[if(equals(parameters('EnableElasticPremiumPlan'), true()), true(), false())]"
+        "allowSharedKeyAccess": false
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]"
@@ -178,10 +156,10 @@
             "tenantId": "[subscription().tenantId]"
           }
         ],
-        "publicNetworkAccess": "[if(equals(parameters('EnablePrivateNetworking'), true()), 'Disabled', 'Enabled')]",
+        "publicNetworkAccess": "Enabled",
         "networkAcls": {
-          "defaultAction": "[if(equals(parameters('EnablePrivateNetworking'), true()), 'Deny', 'Allow')]",
-          "bypass": "[if(equals(parameters('EnablePrivateNetworking'), true()), 'None', 'AzureServices')]"
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
         }
       },
       "dependsOn": [
@@ -238,6 +216,34 @@
         "Request_Source": "rest",
         "WorkspaceResourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[2], split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[8])]"
       }
+    },
+    {
+      "condition": "[equals(parameters('DeployFunctionCode'), true())]",
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2023-08-01",
+      "name": "deployCode",
+      "location": "[variables('location')]",
+      "kind": "AzurePowerShell",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))))]": {}
+        }
+      },
+      "properties": {
+        "azPowerShellVersion": "12.3",
+        "retentionInterval": "PT1H",
+        "timeout": "PT10M",
+        "cleanupPreference": "Always",
+        "primaryScriptUri": "[variables('deploymentScriptUri')]",
+        "arguments": "[if(equals(parameters('EnablePrivateNetworking'), true()), format('-PackageUri {0} -SubscriptionId {1} -ResourceGroupName {2} -FunctionAppName {3} -FAScope {4} -UAMIPrincipalId {5} -VnetScope {6} -RestrictedIPs \"None\"', variables('functionAppPackageUri'), split(subscription().id, '/')[2], resourceGroup().name, reference(resourceId('Microsoft.Resources/deployments', 'functionAppPe'), '2022-09-01').outputs.functionAppName.value, reference(resourceId('Microsoft.Resources/deployments', 'functionAppDeploy'), '2022-09-01').outputs.functionAppId.value, reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId, reference(resourceId('Microsoft.Resources/deployments', 'privateNetwork'), '2022-09-01').outputs.vnetId.value), format('-PackageUri {0} -SubscriptionId {1} -ResourceGroupName {2} -FunctionAppName {3} -FAScope {4} -UAMIPrincipalId {5}', variables('functionAppPackageUri'), split(subscription().id, '/')[2], resourceGroup().name, reference(resourceId('Microsoft.Resources/deployments', 'functionAppDeploy'), '2022-09-01').outputs.functionAppName.value, reference(resourceId('Microsoft.Resources/deployments', 'functionAppDeploy'), '2022-09-01').outputs.functionAppId.value, reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'functionAppDeploy')]",
+        "[resourceId('Microsoft.Resources/deployments', 'functionAppDeployFilesKv')]",
+        "[resourceId('Microsoft.Resources/deployments', 'functionAppPe')]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
+      ]
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -1925,12 +1931,14 @@
             "value": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__blobServiceUri', 'value', format('https://{0}.blob.{1}', parameters('StorageAccountName'), environment().suffixes.storage)), createObject('name', 'AzureWebJobsStorage__clientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'AzureWebJobsSecretStorageType', 'value', 'keyvault'), createObject('name', 'AzureWebJobsSecretStorageKeyVaultUri', 'value', format('https://{0}{1}/', parameters('KeyVaultName'), environment().suffixes.keyvaultDns)), createObject('name', 'AzureWebJobsSecretStorageKeyVaultClientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'APPINSIGHTS_INSTRUMENTATIONKEY', 'value', if(equals(parameters('DeployApplicationInsights'), true()), reference(resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName'))), '2020-02-02').InstrumentationKey, '')), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'powershell'), createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1'), createObject('name', 'LawResourceId', 'value', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[2], split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[8])), createObject('name', 'DcrImmutableId', 'value', reference(resourceId('Microsoft.Resources/deployments', 'createCustomTables'), '2022-09-01').outputs.DcrImmutableId.value), createObject('name', 'DceUri', 'value', reference(resourceId('Microsoft.Resources/deployments', 'createCustomTables'), '2022-09-01').outputs.DceUri.value), createObject('name', 'UamiClientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'FullImport', 'value', '0'), createObject('name', 'DeploymentVersion', 'value', variables('deploymentVersion'))), if(equals(parameters('EnableElasticPremiumPlan'), true()), createArray(createObject('name', 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'value', format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', parameters('StorageAccountName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')), '2023-05-01').keys[0].value))), createArray()))]"
           },
           "EnablePrivateNetworking": {
-            "value": "[parameters('EnablePrivateNetworking')]"
+            "value": false
           },
           "FunctionAppName": {
             "value": "[parameters('FunctionAppName')]"
           },
-          "FunctionAppSubnetId": "[if(equals(parameters('EnablePrivateNetworking'), true()), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'privateNetwork'), '2022-09-01').outputs.functionAppSubnetId.value), createObject('value', ''))]",
+          "FunctionAppSubnetId": {
+            "value": ""
+          },
           "HostingPlanId": {
             "value": "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]"
           },
@@ -1941,7 +1949,7 @@
             "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
           },
           "DeployFunctionCode": {
-            "value": false
+            "value": "[parameters('DeployFunctionCode')]"
           },
           "UserAssignedMiPrincipalId": {
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
@@ -2012,9 +2020,6 @@
                 "httpsOnly": true,
                 "clientCertEnabled": true,
                 "clientCertMode": "OptionalInteractiveUser",
-                "virtualNetworkSubnetId": "[if(equals(parameters('EnablePrivateNetworking'), true()), parameters('FunctionAppSubnetId'), null())]",
-                "vnetContentShareEnabled": "[if(equals(parameters('EnablePrivateNetworking'), true()), true(), false())]",
-                "vnetRouteAllEnabled": "[if(equals(parameters('EnablePrivateNetworking'), true()), true(), false())]",
                 "siteConfig": {
                   "appSettings": "[parameters('AppSettings')]",
                   "powerShellVersion": "7.4",
@@ -2032,7 +2037,7 @@
               }
             },
             {
-              "condition": false,
+              "condition": "[equals(parameters('DeployFunctionCode'), true())]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "scope": "[format('Microsoft.Web/sites/{0}', parameters('FunctionAppName'))]",
@@ -2060,10 +2065,9 @@
         }
       },
       "dependsOn": [
-
+        "[resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName')))]",
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]",
         "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]",
-        "[resourceId('Microsoft.Resources/deployments', 'privateNetwork')]",
         "[resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName'))]",
         "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')), 'Microsoft.Authorization/roleAssignments', guid(resourceId('Microsoft.Storage/storageAccounts', parameters('StorageAccountName')), variables('roleIdStorageBlobDataOwner'), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))))]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
@@ -2084,12 +2088,14 @@
             "value": "[concat(createArray(createObject('name', 'AzureWebJobsStorage__blobServiceUri', 'value', format('https://{0}.blob.{1}', parameters('StorageAccountName'), environment().suffixes.storage)), createObject('name', 'AzureWebJobsStorage__clientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'AzureWebJobsSecretStorageType', 'value', 'keyvault'), createObject('name', 'AzureWebJobsSecretStorageKeyVaultUri', 'value', format('https://{0}{1}/', parameters('KeyVaultName'), environment().suffixes.keyvaultDns)), createObject('name', 'AzureWebJobsSecretStorageKeyVaultClientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'FUNCTIONS_EXTENSION_VERSION', 'value', '~4'), createObject('name', 'APPINSIGHTS_INSTRUMENTATIONKEY', 'value', if(equals(parameters('DeployApplicationInsights'), true()), reference(resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName'))), '2020-02-02').InstrumentationKey, '')), createObject('name', 'FUNCTIONS_WORKER_RUNTIME', 'value', 'powershell'), createObject('name', 'WEBSITE_RUN_FROM_PACKAGE', 'value', '1'), createObject('name', 'LawResourceId', 'value', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[2], split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[4]), 'Microsoft.OperationalInsights/workspaces', split(parameters('LogAnalyticsWorkspaceResourceID'), '/')[8])), createObject('name', 'DcrImmutableId', 'value', reference(resourceId('Microsoft.Resources/deployments', 'createCustomTables'), '2022-09-01').outputs.DcrImmutableId.value), createObject('name', 'DceUri', 'value', reference(resourceId('Microsoft.Resources/deployments', 'createCustomTables'), '2022-09-01').outputs.DceUri.value), createObject('name', 'UamiClientId', 'value', reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').clientId), createObject('name', 'FullImport', 'value', '0'), createObject('name', 'DeploymentVersion', 'value', variables('deploymentVersion'))), if(equals(parameters('EnableElasticPremiumPlan'), true()), variables('appSettingsFilesKv'), createArray()))]"
           },
           "EnablePrivateNetworking": {
-            "value": "[parameters('EnablePrivateNetworking')]"
+            "value": false
           },
           "FunctionAppName": {
             "value": "[parameters('FunctionAppName')]"
           },
-          "FunctionAppSubnetId": "[if(equals(parameters('EnablePrivateNetworking'), true()), createObject('value', reference(resourceId('Microsoft.Resources/deployments', 'privateNetwork'), '2022-09-01').outputs.functionAppSubnetId.value), createObject('value', ''))]",
+          "FunctionAppSubnetId": {
+            "value": ""
+          },
           "HostingPlanId": {
             "value": "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]"
           },
@@ -2100,7 +2106,7 @@
             "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
           },
           "DeployFunctionCode": {
-            "value": false
+            "value": "[parameters('DeployFunctionCode')]"
           },
           "UserAssignedMiPrincipalId": {
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
@@ -2171,9 +2177,6 @@
                 "httpsOnly": true,
                 "clientCertEnabled": true,
                 "clientCertMode": "OptionalInteractiveUser",
-                "virtualNetworkSubnetId": "[if(equals(parameters('EnablePrivateNetworking'), true()), parameters('FunctionAppSubnetId'), null())]",
-                "vnetContentShareEnabled": "[if(equals(parameters('EnablePrivateNetworking'), true()), true(), false())]",
-                "vnetRouteAllEnabled": "[if(equals(parameters('EnablePrivateNetworking'), true()), true(), false())]",
                 "siteConfig": {
                   "appSettings": "[parameters('AppSettings')]",
                   "powerShellVersion": "7.4",
@@ -2191,7 +2194,7 @@
               }
             },
             {
-              "condition": false,
+              "condition": "[equals(parameters('DeployFunctionCode'), true())]",
               "type": "Microsoft.Authorization/roleAssignments",
               "apiVersion": "2022-04-01",
               "scope": "[format('Microsoft.Web/sites/{0}', parameters('FunctionAppName'))]",
@@ -2219,11 +2222,10 @@
         }
       },
       "dependsOn": [
-
+        "[resourceId('Microsoft.Insights/components', format('appInsights-{0}', parameters('FunctionAppName')))]",
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]",
         "[resourceId('Microsoft.Resources/deployments', 'functionAppDeploy')]",
         "[resourceId('Microsoft.Web/serverfarms', parameters('FunctionAppName'))]",
-        "[resourceId('Microsoft.Resources/deployments', 'privateNetwork')]",
         "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName')))]"
       ]
     },
@@ -2504,12 +2506,7 @@
         "[resourceId('Microsoft.Resources/deployments', 'createCustomTables')]",
         "[resourceId('Microsoft.Resources/deployments', 'functionAppDeploy')]"
       ]
-    },
-    {
-      "condition": "[equals(parameters('EnablePrivateNetworking'), true())]",
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2022-09-01",
-      "name": "privateNetwork",
+    }
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -2547,7 +2544,7 @@
             "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('uami-{0}', parameters('FunctionAppName'))), '2023-01-31').principalId]"
           },
           "DeployCode": {
-            "value": false
+            "value": "[parameters('DeployFunctionCode')]"
           }
         },
         "template": {

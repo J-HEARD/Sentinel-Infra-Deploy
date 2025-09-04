@@ -1,8 +1,6 @@
 var deploymentVersion = '1.1.2'
 @description('A globally unique name for the Function App to be created which will run the code to ingest MDVM data into Sentinel.')
 param FunctionAppName string = 'fa-mdvm-${uniqueString(resourceGroup().id)}'
-@description('Select to enable Application Insights for the Function App. This will allow you to monitor the status of the Function App for any errors. The Log Analytics Workspace specified in the "Log Analytics Resource Id" Parameter will be used to store the Application Insights data.')
-param DeployApplicationInsights bool = true
 @description('A globally unique name for the Key Vault to be created which will store Function App secrets.')
 param KeyVaultName string = 'kv-mdvm-${uniqueString(resourceGroup().id)}'
 @description('A globally unique name for the Function App Storage Account. Must be between 3 and 24 characters in length and use numbers and lower-case letters only.')
@@ -21,16 +19,6 @@ param DeployWorkbooks bool = true
 param DeployFunctionCode bool = true
 @description('GitHub repo where Azure Function package and post deployment script is located. Leave the default value unless you are using content from a different location. This is not applicable if the Deploy Function Code parameter is set to false.')
 param RepoUri string = 'https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm'
-@description('Recommended when processing a large number of events but increases cost.')
-param EnableElasticPremiumPlan bool = false
-@description('Enabling Private Networking will restrict public access to the Function App for additional security. A Virtual Network with the below address space and subnets, along with an NSG, Private Endpoints, and Private DNS Zones will be deployed to support this configuration. This will also leverage the Dedicated App Service Premium plan (P0v3) instead of the Consumption plan (If the Elastic Premium Plan is selected, it will be used instead of the Dedicated App Service Premium Plan.).')
-param EnablePrivateNetworking bool = true
-@description('If enabling Private Networking, choose the desired address space for the Virtual Network or leave the default.')
-param PrivateNetworkAddressSpace string = '10.0.0.0/24'
-@description('If enabling Private Networking, choose the desired address space for the Private Endpoints subnet or leave the default. Do not make subnets any smaller than the default.')
-param PrivateEndpointsSubnet string = '10.0.0.0/26'
-@description('If enabling Private Networking, choose the desired address space for the Function App vnet integration subnet or leave the default. Do not make subnets any smaller than the default.')
-param FunctionAppSubnet string = '10.0.0.64/26'
 
 var location = resourceGroup().location
 var functionAppPackageUri = '${RepoUri}/functionPackage.zip'
@@ -71,13 +59,13 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
   properties: {
     allowBlobPublicAccess: false
-    publicNetworkAccess: EnablePrivateNetworking == true ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled'
     minimumTlsVersion: 'TLS1_2' 
     networkAcls: {
-      defaultAction: EnablePrivateNetworking == true ? 'Deny' : 'Allow'
+      defaultAction: 'Allow'
       bypass: 'AzureServices'
     }
-    allowSharedKeyAccess: EnableElasticPremiumPlan == true ? true : false 
+    allowSharedKeyAccess: false 
   }
 }
 
@@ -111,52 +99,29 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
         tenantId: subscription().tenantId
       }
     ]
-    publicNetworkAccess: EnablePrivateNetworking == true ? 'Disabled' : 'Enabled'
+    publicNetworkAccess: 'Enabled'
     networkAcls: {
-      defaultAction: EnablePrivateNetworking == true ? 'Deny' : 'Allow'
-      bypass: EnablePrivateNetworking == true ? 'None' : 'AzureServices'
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
     }
   }
 }
 
 
-resource keyVaultSecretStorageAccountConnectionString 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (EnableElasticPremiumPlan == true) {
-  parent: keyVault
-  name: 'StorageAccountConnectionString'
-  properties: {
-    value: 'DefaultEndpointsProtocol=https;AccountName=${StorageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-  }
-}
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: FunctionAppName
   location: location
   sku: {
-    name: EnableElasticPremiumPlan == true ? 'EP1' : EnablePrivateNetworking == true ? 'P0v3' : 'P0v3'
-    tier: EnableElasticPremiumPlan == true ? 'ElasticPremium' : EnablePrivateNetworking == true ? 'PremiumV3' : 'PremiumV3'
+    name: 'Y1'
+    tier: 'Dynamic'
   }
 }
 
 var appSettingsDefault = [
   {
-    name: 'AzureWebJobsStorage__blobServiceUri'
-    value: 'https://${StorageAccountName}.blob.${environment().suffixes.storage}' 
-  }
-  {
-    name: 'AzureWebJobsStorage__clientId'
-    value: userAssignedMi.properties.clientId 
-  }
-  {
-    name: 'AzureWebJobsSecretStorageType'
-    value: 'keyvault'
-  }
-  {
-    name: 'AzureWebJobsSecretStorageKeyVaultUri'
-    value: 'https://${KeyVaultName}${environment().suffixes.keyvaultDns}/'
-  }
-  {
-    name: 'AzureWebJobsSecretStorageKeyVaultClientId'
-    value: userAssignedMi.properties.clientId
+    name: 'AzureWebJobsStorage'
+    value: 'DefaultEndpointsProtocol=https;AccountName=${StorageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
   }
   {
     name: 'FUNCTIONS_EXTENSION_VERSION'
@@ -164,7 +129,7 @@ var appSettingsDefault = [
   }
   {
     name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-    value: DeployApplicationInsights == true ? applicationInsights.properties.InstrumentationKey : ''
+    value: ''
   }
   {
     name: 'FUNCTIONS_WORKER_RUNTIME'
@@ -200,30 +165,6 @@ var appSettingsDefault = [
   }
 ]
 
-var appSettingsFiles = [
-  {
-    name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-    value: 'DefaultEndpointsProtocol=https;AccountName=${StorageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-  }
-  /*
-  {
-    name: 'WEBSITE_CONTENTSHARE'
-    value: toLower(FunctionAppName)
-  }
-  {
-    name: 'WEBSITE_SKIP_CONTENTSHARE_VALIDATION'
-    value: '1'
-  }
-  */
-]
-
-var appSettingsFilesKv = [
-  {
-    name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-    value: '@Microsoft.KeyVault(VaultName=${KeyVaultName};SecretName=StorageAccountConnectionString)'
-  }
-]
-
 resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, roleIdStorageBlobDataOwner, userAssignedMi.id) 
   scope: storageAccount 
@@ -237,10 +178,8 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 module functionAppDeploy 'modules/functionApp.bicep' = {
   name: 'functionAppDeploy'
   params: {
-    AppSettings: concat(appSettingsDefault, EnableElasticPremiumPlan == true ? appSettingsFiles : [])
-    EnablePrivateNetworking: EnablePrivateNetworking
+    AppSettings: appSettingsDefault
     FunctionAppName: FunctionAppName 
-    FunctionAppSubnetId: EnablePrivateNetworking == true ? privateNetwork.outputs.functionAppSubnetId : ''
     HostingPlanId: hostingPlan.id
     Location: location 
     UserAssignedMiId: userAssignedMi.id
@@ -253,35 +192,7 @@ module functionAppDeploy 'modules/functionApp.bicep' = {
   ]
 }
 
-module functionAppDeployFilesKv 'modules/functionApp.bicep' = if(EnableElasticPremiumPlan == true) {
-  name: 'functionAppDeployFilesKv'
-  params: {
-    AppSettings: concat(appSettingsDefault, EnableElasticPremiumPlan == true ? appSettingsFilesKv : [])
-    EnablePrivateNetworking: EnablePrivateNetworking
-    FunctionAppName: FunctionAppName 
-    FunctionAppSubnetId: EnablePrivateNetworking == true ? privateNetwork.outputs.functionAppSubnetId : ''
-    HostingPlanId: hostingPlan.id
-    Location: location 
-    UserAssignedMiId: userAssignedMi.id
-    DeployFunctionCode: DeployFunctionCode
-    UserAssignedMiPrincipalId: userAssignedMi.properties.principalId
-    RoleIdOwner: roleIdOwner 
-  }
-  dependsOn: [
-    functionAppDeploy
-  ]
-}
 
-resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = if (DeployApplicationInsights == true) {
-  name: 'appInsights-${FunctionAppName}'
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    Request_Source: 'rest'
-    WorkspaceResourceId: law.id
-  }
-}
 
 module roleAssignmentLaw 'modules/lawRoleAssignment.bicep' = {
   scope: resourceGroup(split(law.id, '/')[2], split(law.id, '/')[4])
@@ -309,33 +220,6 @@ module sentinelWorkbooks 'modules/sentinelWorkbooks.bicep' = if (DeployWorkbooks
   }
 }
 
-module privateNetwork 'modules/privateNetwork.bicep' = if (EnablePrivateNetworking == true) {
-  name: 'privateNetwork'
-  params: {
-    FunctionAppName: FunctionAppName
-    KeyVaultId: keyVault.id
-    location: location
-    StorageAccountId: storageAccount.id
-    StorageAccountName: StorageAccountName
-    KeyVaultName: KeyVaultName
-    PrivateNetworkAddressSpace: PrivateNetworkAddressSpace
-    FunctionAppSubnet: FunctionAppSubnet
-    PrivateEndpointsSubnet: PrivateEndpointsSubnet
-    PrincipalId: userAssignedMi.properties.principalId
-    DeployCode: DeployFunctionCode
-  }
-}
-
-module functionAppPe 'modules/functionAppPE.bicep' = if (EnablePrivateNetworking == true) {
-  name: 'functionAppPe'
-  params: {
-    Location: location
-    FunctionAppId: functionAppDeploy.outputs.functionAppId
-    FunctionAppName: FunctionAppName
-    PrivateEndpointSubnetId: EnablePrivateNetworking == true ? privateNetwork.outputs.privateEndpointSubnetId : (null)
-    VnetId: EnablePrivateNetworking == true ? privateNetwork.outputs.vnetId : (null)
-  }
-}
 
 resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = if (DeployFunctionCode == true) {
   name: 'deployCode'
@@ -353,13 +237,8 @@ resource deploymentScript 'Microsoft.Resources/deploymentScripts@2023-08-01' = i
     timeout: 'PT10M'
     cleanupPreference: 'Always'
     primaryScriptUri: deploymentScriptUri
-    arguments: EnablePrivateNetworking == true
-      ? '-PackageUri ${functionAppPackageUri} -SubscriptionId ${split(subscription().id, '/')[2]} -ResourceGroupName ${resourceGroup().name} -FunctionAppName ${functionAppPe.outputs.functionAppName} -FAScope ${functionAppDeploy.outputs.functionAppId} -UAMIPrincipalId ${userAssignedMi.properties.principalId} -VnetScope ${privateNetwork.outputs.vnetId} -RestrictedIPs "None"'
-      : '-PackageUri ${functionAppPackageUri} -SubscriptionId ${split(subscription().id, '/')[2]} -ResourceGroupName ${resourceGroup().name} -FunctionAppName ${functionAppDeploy.outputs.functionAppName} -FAScope ${functionAppDeploy.outputs.functionAppId} -UAMIPrincipalId ${userAssignedMi.properties.principalId}'
+    arguments: '-PackageUri ${functionAppPackageUri} -SubscriptionId ${split(subscription().id, '/')[2]} -ResourceGroupName ${resourceGroup().name} -FunctionAppName ${functionAppDeploy.outputs.functionAppName} -FAScope ${functionAppDeploy.outputs.functionAppId} -UAMIPrincipalId ${userAssignedMi.properties.principalId}'
   }
-  dependsOn: EnableElasticPremiumPlan == true ? [
-    functionAppDeployFilesKv
-  ] : []
 }
 
 output UserAssignedManagedIdentityPrincipalId string = userAssignedMi.properties.principalId
