@@ -20,7 +20,7 @@ param DeployWorkbooks bool = true
 @description('Use the Azure Deployment Script resource to automatically deploy the Function App code. This requires the Microsoft.ContainerInstance resource provider to be registred on the subsription.')
 param DeployFunctionCode bool = true
 @description('GitHub repo where Azure Function package and post deployment script is located. Leave the default value unless you are using content from a different location. This is not applicable if the Deploy Function Code parameter is set to false.')
-param RepoUri string = 'https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-mdvm'
+param RepoUri string = 'https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm'
 @description('Recommended when processing a large number of events but increases cost.')
 param EnableElasticPremiumPlan bool = false
 @description('Enabling Private Networking will restrict public access to the Function App for additional security. A Virtual Network with the below address space and subnets, along with an NSG, Private Endpoints, and Private DNS Zones will be deployed to support this configuration. This will also leverage the Dedicated App Service Premium plan (P0v3) instead of the Consumption plan (If the Elastic Premium Plan is selected, it will be used instead of the Dedicated App Service Premium Plan.).')

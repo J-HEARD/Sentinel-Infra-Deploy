@@ -81,7 +81,7 @@
     },
     "RepoUri": {
       "type": "string",
-      "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-mdvm",
+      "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm",
       "metadata": {
         "description": "GitHub repo where Azure Function package and post deployment script is located. Leave the default value unless you are using content from a different location. This is not applicable if the Deploy Function Code parameter is set to false."
       }

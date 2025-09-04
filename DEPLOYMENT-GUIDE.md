@@ -43,7 +43,7 @@ Before beginning deployment, ensure you have:
 
 1. **Navigate to the deployment page:**
   
-   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-ui%2FcreateUiDefinition.json)
+   [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-ui%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-ui%2FcreateUiDefinition.json)
 
 2. **Configure basic settings:**
    ```
@@ -83,7 +83,7 @@ Before beginning deployment, ensure you have:
 ```bash
 az deployment sub create \
   --location eastus \
-  --template-uri https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json \
+  --template-uri https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-ui/azuredeploy.json \
   --parameters \
     rgName="CISO-RG-SENTINEL" \
     workspaceName="CISO-WS-SENTINEL" \
@@ -106,7 +106,7 @@ $params = @{
 
 New-AzSubscriptionDeployment `
   -Location "eastus" `
-  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-ui/azuredeploy.json" `
+  -TemplateUri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-ui/azuredeploy.json" `
   @params
 ```
 
@@ -134,10 +134,10 @@ New-AzSubscriptionDeployment `
 1. **Choose your deployment method:**
 
    **Option A: Standard Deployment** (Requires Container Instance quota)
-   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
+   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
 
    **Option B: Deploy Without Function Code** (No Container Instance required)
-   [![Deploy MDVM Without ACI](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmain%2Fsentinel-deploy-mdvm%2FazureDeploy-NoFunctionDeploy.json)
+   [![Deploy MDVM Without ACI](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy-NoFunctionDeploy.json)
    
    > If using Option B, you'll need to manually deploy the function code after infrastructure deployment (see instructions below).
 
@@ -226,7 +226,7 @@ If you used Option B above, follow these steps to deploy the function code:
    $functionAppName = (Get-AzFunctionApp -ResourceGroupName $resourceGroupName | Where-Object {$_.Name -like "fa-mdvm-*"}).Name
    
    # Download and deploy the function package
-   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/main/sentinel-deploy-mdvm/functionPackage.zip" -OutFile "functionPackage.zip"
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm/functionPackage.zip" -OutFile "functionPackage.zip"
    Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -ArchivePath "./functionPackage.zip" -Force
    
    Write-Host "Function code deployed successfully to $functionAppName" -ForegroundColor Green
