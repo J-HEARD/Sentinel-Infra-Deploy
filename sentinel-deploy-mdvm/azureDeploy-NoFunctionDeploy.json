@@ -83,7 +83,7 @@
     },
     "EnablePrivateNetworking": {
       "type": "bool",
-      "defaultValue": true,
+      "defaultValue": false,
       "metadata": {
         "description": "Enabling Private Networking will restrict public access to the Function App for additional security. A Virtual Network with the below address space and subnets, along with an NSG, Private Endpoints, and Private DNS Zones will be deployed to support this configuration. This will also leverage the Dedicated App Service Premium plan (P0v3) instead of the Consumption plan (If the Elastic Premium Plan is selected, it will be used instead of the Dedicated App Service Premium Plan.)."
       }
@@ -207,8 +207,8 @@
       "name": "[parameters('FunctionAppName')]",
       "location": "[variables('location')]",
       "sku": {
-        "name": "[if(equals(parameters('EnableElasticPremiumPlan'), true()), 'EP1', if(equals(parameters('EnablePrivateNetworking'), true()), 'P0v3', 'P0v3'))]",
-        "tier": "[if(equals(parameters('EnableElasticPremiumPlan'), true()), 'ElasticPremium', if(equals(parameters('EnablePrivateNetworking'), true()), 'PremiumV3', 'PremiumV3'))]"
+        "name": "Y1",
+        "tier": "Dynamic"
       }
     },
     {

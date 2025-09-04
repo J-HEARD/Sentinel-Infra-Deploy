@@ -129,17 +129,9 @@ New-AzSubscriptionDeployment `
 
 ### Step 1: Deploy MDVM Infrastructure
 
-> **Important:** If you encounter Azure Container Instance quota issues, use Option B below.
-
-1. **Choose your deployment method:**
-
-   **Option A: Standard Deployment** (Requires Container Instance quota)
-   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
-
-   **Option B: Deploy Without Function Code** (No Container Instance required)
-   [![Deploy MDVM Without ACI](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy-NoFunctionDeploy.json)
+1. **Deploy using the standard template:**
    
-   > If using Option B, you'll need to manually deploy the function code after infrastructure deployment (see instructions below).
+   [![Deploy MDVM Connector](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy.json)
 
 2. **Configure settings:**
    ```
@@ -152,6 +144,8 @@ New-AzSubscriptionDeployment `
 3. **Review and create:**
    - Click "Review + Create"
    - Note the deployment outputs (you'll need these)
+
+> **If the above deployment fails with quota errors, skip to Phase 2B below instead.**
 
 ### Step 2: Configure API Permissions
 
@@ -211,32 +205,6 @@ New-AzSubscriptionDeployment `
    - Check for success messages in PowerShell output
    - All three permissions should show as "Assigned" or "Already assigned"
 
-### Step 2a: Deploy Function Code Manually (Only for Option B)
-
-If you used Option B above, follow these steps to deploy the function code:
-
-1. **Open Azure Cloud Shell** or PowerShell
-
-2. **Run these commands:**
-   ```powershell
-   # Set your resource group name
-   $resourceGroupName = "CISO-RG-SENTINEL"  # Replace with your RG name
-   
-   # Get the Function App name
-   $functionAppName = (Get-AzFunctionApp -ResourceGroupName $resourceGroupName | Where-Object {$_.Name -like "fa-mdvm-*"}).Name
-   
-   # Download and deploy the function package
-   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm/functionPackage.zip" -OutFile "functionPackage.zip"
-   Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -ArchivePath "./functionPackage.zip" -Force
-   
-   Write-Host "Function code deployed successfully to $functionAppName" -ForegroundColor Green
-   ```
-
-3. **Verify deployment:**
-   - Go to the Function App in Azure Portal
-   - Navigate to Functions > GetMDVMData
-   - You should see the function code
-
 ### Step 3: Initial Function Execution
 
 1. **Navigate to Function App:**
@@ -256,6 +224,65 @@ If you used Option B above, follow these steps to deploy the function code:
    - First run may take 5-15 minutes
 
 **⏱️ Expected Duration: 20-30 minutes**
+
+---
+
+## Phase 2B: MDVM Connector Deployment (Quota Issues)
+
+> **Use this phase only if Phase 2 failed with quota errors**
+
+### Step 1: Deploy MDVM Infrastructure (No-Quota Version)
+
+1. **Deploy using the quota-friendly template:**
+   
+   [![Deploy MDVM Without ACI](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-mdvm%2FazureDeploy-NoFunctionDeploy.json)
+
+2. **Configure settings:**
+   ```
+   Subscription:              [Same as Phase 1]
+   Resource Group:            [Same as Phase 1 or new]
+   Workspace Name:            CISO-WS-SENTINEL
+   Workspace Resource Group:  CISO-RG-SENTINEL
+   ```
+
+3. **Review and create:**
+   - Click "Review + Create"
+   - This template uses Consumption plan and avoids quota issues
+   - Note the deployment outputs (you'll need these)
+
+### Step 2: Deploy Function Code Manually
+
+After the infrastructure deployment completes, you must manually deploy the function code:
+
+1. **Open Azure Cloud Shell** and run:
+   ```powershell
+   # Set your resource group name
+   $resourceGroupName = "CISO-RG-SENTINEL"  # Replace with your RG name
+   
+   # Get the Function App name
+   $functionAppName = (Get-AzFunctionApp -ResourceGroupName $resourceGroupName | Where-Object {$_.Name -like "fa-mdvm-*"}).Name
+   
+   # Download and deploy the function package
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-mdvm/functionPackage.zip" -OutFile "functionPackage.zip"
+   Publish-AzWebapp -ResourceGroupName $resourceGroupName -Name $functionAppName -ArchivePath "./functionPackage.zip" -Force
+   
+   Write-Host "Function code deployed successfully to $functionAppName" -ForegroundColor Green
+   ```
+
+2. **Verify deployment:**
+   - Go to the Function App in Azure Portal
+   - Navigate to Functions > GetMDVMData
+   - You should see the function code
+
+### Step 3: Configure API Permissions
+
+Follow the same API permission steps as in Phase 2, Step 2.
+
+### Step 4: Initial Function Execution
+
+Follow the same function execution steps as in Phase 2, Step 3.
+
+**⏱️ Expected Duration: 25-35 minutes**
 
 ---
 
