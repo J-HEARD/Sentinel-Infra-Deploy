@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "780596841341057322"
+      "templateHash": "10103625591028294719"
     }
   },
   "parameters": {
@@ -1963,7 +1963,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "17953351605976364884"
+              "templateHash": "2000064343056030670"
             }
           },
           "parameters": {
@@ -2007,16 +2007,12 @@
               "kind": "functionapp",
               "properties": {
                 "serverFarmId": "[parameters('HostingPlanId')]",
-                "keyVaultReferenceIdentity": "[parameters('UserAssignedMiId')]",
                 "httpsOnly": true,
-                "clientCertEnabled": true,
-                "clientCertMode": "OptionalInteractiveUser",
                 "siteConfig": {
                   "appSettings": "[parameters('AppSettings')]",
                   "powerShellVersion": "7.4",
                   "minTlsVersion": "1.2",
                   "ftpsState": "Disabled",
-                  "http20Enabled": true,
                   "alwaysOn": false,
                   "publicNetworkAccess": "Enabled",
                   "cors": {

@@ -19,16 +19,12 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
   kind: 'functionapp'
   properties: {
     serverFarmId: HostingPlanId
-    keyVaultReferenceIdentity: UserAssignedMiId
     httpsOnly: true
-    clientCertEnabled: true
-    clientCertMode: 'OptionalInteractiveUser'
     siteConfig: {
       appSettings: AppSettings
       powerShellVersion: '7.4'
       minTlsVersion: '1.2' 
       ftpsState: 'Disabled'
-      http20Enabled: true
       alwaysOn: false
       publicNetworkAccess: 'Enabled'
       cors: {
