@@ -29,7 +29,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
       minTlsVersion: '1.2' 
       ftpsState: 'Disabled'
       http20Enabled: true
-      alwaysOn: true
+      alwaysOn: false
       publicNetworkAccess: 'Enabled'
       cors: {
         allowedOrigins: [

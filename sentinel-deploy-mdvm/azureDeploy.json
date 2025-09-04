@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "3592496672942163766"
+      "templateHash": "780596841341057322"
     }
   },
   "parameters": {
@@ -1963,7 +1963,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "18156065548843187883"
+              "templateHash": "17953351605976364884"
             }
           },
           "parameters": {
@@ -2017,7 +2017,7 @@
                   "minTlsVersion": "1.2",
                   "ftpsState": "Disabled",
                   "http20Enabled": true,
-                  "alwaysOn": true,
+                  "alwaysOn": false,
                   "publicNetworkAccess": "Enabled",
                   "cors": {
                     "allowedOrigins": [
