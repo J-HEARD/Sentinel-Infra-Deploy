@@ -3,15 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "rgName": {
-            "type": "string",
-            "defaultValue": "CISO-RG-SENTINEL",
-            "metadata": {
-                "description": "Name of the resource group to create"
-            }
+            "type": "string"
+        },
+        "location": {
+            "type": "string"
         },
         "workspaceName": {
             "type": "string",
-            "defaultValue": "CISO-WS-SENTINEL",
             "metadata": {
                 "description": "Name for the Log Analytics workspace"
             }
@@ -36,7 +34,7 @@
         "capacityReservation": {
             "type": "int",
             "metadata": {
-                "description": "Commitment tier (only applies to CapacityReservation pricing tier)"
+                "description": "Commitment tier"
             },
             "allowedValues": [
                 100,
@@ -50,12 +48,25 @@
             ],
             "defaultValue": 100
         },
+        "enableDataConnectors": {
+            "type": "array",
+            "metadata": {
+                "description": "The kind of data connectors that can be deployed via ARM templates are the following: [\"AzureActivityLog\",\"SecurityInsightsSecurityEventCollectionConfiguration\",\"WindowsFirewall\",\"DnsAnalytics\"], Reference: https://docs.microsoft.com/azure/templates/microsoft.operationalinsights/2020-03-01-preview/workspaces/datasources#microsoftoperationalinsightsworkspacesdatasources-object"
+            },
+            "defaultValue": []
+        },
+        "severityLevels": {
+            "type": "array",
+            "metadata": {
+                "description": "Severity levels desired for Analytics Rules"
+            },
+            "defaultValue": []
+        },
         "dailyQuota": {
             "type": "int",
             "metadata": {
                 "description": "Daily ingestion limit in GBs. This limit doesn't apply to the following tables: SecurityAlert, SecurityBaseline, SecurityBaselineSummary, SecurityDetection, SecurityEvent, WindowsFirewall, MaliciousIPCommunication, LinuxAuditLog, SysmonEvent, ProtectionStatus, WindowsEvent"
-            },
-            "defaultValue": 0
+            }
         },
         "dataRetention": {
             "type": "int",
@@ -73,18 +84,24 @@
             },
             "defaultValue": true
         },
-        "enableUeba": {
-            "type": "bool",
-            "metadata": {
-                "description": "Whether or not UEBA should be enabled"
-            },
-            "defaultValue": true
-        },
-
-        "enableDataConnectors": {
+        "enableSolutions1P": {
             "type": "array",
             "metadata": {
-                "description": "Array of data connector types to enable. Options: AzureActiveDirectory, Office365, MicrosoftDefenderForCloud, Microsoft365Defender, Dynamics365, IOT, Office365Project, OfficeIRM, PowerBI, ThreatIntelligence"
+                "description": "The list of Content Hub 1st party solutions to deploy."
+            },
+            "defaultValue": []
+        },
+        "enableSolutionsEssentials": {
+            "type": "array",
+            "metadata": {
+                "description": "The list of Content Hub Essentials solutions to deploy."
+            },
+            "defaultValue": []
+        },
+        "enableSolutionsTraining": {
+            "type": "array",
+            "metadata": {
+                "description": "The list of Content Hub Training solutions to deploy."
             },
             "defaultValue": []
         },
@@ -95,19 +112,43 @@
             },
             "defaultValue": []
         },
-        "location": {
-            "type": "string",
-            "defaultValue": "[deployment().location]",
+        "enableUeba": {
+            "type": "bool",
             "metadata": {
-                "description": "Location for all resources."
-            }
+                "description": "Whether or not UEBA should be enabled"
+            },
+            "defaultValue": true
+        },
+        "identityProviders": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of identity providers to be synched with UEBA. Valid identity providers are 'ActiveDirectory' and 'AzureActiveDirectory'"
+            },
+            "defaultValue": []
+        },
+        "enableDiagnostics": {
+            "type": "bool"
+        },
+        "enableMLAlerts": {
+            "type": "bool",
+            "metadata": {
+                "description": "Enable ML Behavior Analytics rules"
+            },
+            "defaultValue": false
+        },
+        "enableScheduledAlerts": {
+            "type": "bool",
+            "metadata": {
+                "description": "Enable Scheduled analytics rules"
+            },
+            "defaultValue": false
         },
         "_artifactsLocation": {
             "type": "string",
             "metadata": {
-                "description": "The location of linked templates"
+                "description": "The location of resources"
             },
-            "defaultValue": "https://raw.githubusercontent.com/J-HEARD/Sentinel-Infra-Deploy/master/sentinel-deploy-ui"
+            "defaultValue": "https://raw.githubusercontent.com/garybushey/AllInOneGov/main"
         }
     },
     "variables": {},
@@ -130,7 +171,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/LinkedTemplates/workspace.json')]",
+                    "uri": "https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Tools/Sentinel-All-In-One/v2/LinkedTemplates/workspace.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -169,7 +210,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/LinkedTemplates/settings.json')]",
+                    "uri": "https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Tools/Sentinel-All-In-One/v2/LinkedTemplates/settings.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -178,25 +219,30 @@
                     },
                     "enableUeba": {
                         "value": "[parameters('enableUeba')]"
+                    },
+                    "identityProviders": {
+                        "value": "[parameters('identityProviders')]"
+                    },
+                    "enableDiagnostics": {
+                        "value": "[parameters('enableDiagnostics')]"
                     }
                 }
             }
         },
-
         {
             "condition": "[not(empty(parameters('enableDataConnectors')))]",
-            "name": "dataConnectors",
+            "name": "enableDataConnectors",
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
             "resourceGroup": "[parameters('rgName')]",
             "dependsOn": [
                 "workspaceCreation",
-                "settings"
+                "enableSolutionsAndAlerts"
             ],
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[concat(parameters('_artifactsLocation'), '/LinkedTemplates/dataConnectors.json')]",
+                    "uri": "https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Tools/Sentinel-All-In-One/v2/LinkedTemplates/dataConnectors.json",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
@@ -220,6 +266,47 @@
                     }
                 }
             }
+        },
+        {
+            "condition": "[or(not(empty(parameters('enableSolutions1P'))),not(empty(parameters('enableSolutionsEssentials'))),not(empty(parameters('enableSolutionsTraining'))))]",
+            "name": "enableSolutionsAndAlerts",
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-06-01",
+            "resourceGroup": "[parameters('rgName')]",
+            "dependsOn": [
+                "workspaceCreation",
+                "[resourceId('Microsoft.Resources/resourceGroups',parameters('rgName'))]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "uri": "https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Tools/Sentinel-All-In-One/v2/LinkedTemplates/solutionsAndAlerts.json",
+                    "contentVersion": "1.0.0.0"
+                },
+                "parameters": {
+                    "enableSolutions1P": {
+                        "value": "[replace(replace(string(parameters('enableSolutions1P')),'[',''),']','')]"
+                    },
+                    "enableSolutionsEssentials": {
+                        "value": "[replace(replace(string(parameters('enableSolutionsEssentials')),'[',''),']','')]"
+                    },
+                    "enableSolutionsTraining": {
+                        "value": "[replace(replace(string(parameters('enableSolutionsTraining')),'[',''),']','')]"
+                    },
+                    "workspaceName": {
+                        "value": "[parameters('workspaceName')]"
+                    },
+                    "severityLevels": {
+                        "value": "[replace(replace(string(parameters('severityLevels')),'[',''),']','')]"
+                    },
+                    "enableAlerts": {
+                        "value": "[parameters('enableScheduledAlerts')]"
+                    },
+                    "location": {
+                        "value": "[parameters('location')]"
+                    }
+                }
+            }
         }
     ],
     "outputs": {
@@ -227,13 +314,9 @@
             "type": "string",
             "value": "[parameters('workspaceName')]"
         },
-        "workspaceId": {
-            "type": "string",
-            "value": "[reference('workspaceCreation').outputs.workspaceId.value]"
-        },
         "dataConnectorsList": {
             "type": "string",
-            "value": "[if(empty(parameters('enableDataConnectors')), 'None', replace(replace(string(parameters('enableDataConnectors')),'\"',''),'[',''))]"
+            "value": "[replace(replace(string(parameters('enableDataConnectors')),'\"',''),'[','')]"
         }
     }
 }

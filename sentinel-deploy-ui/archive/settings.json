@@ -1,0 +1,96 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "workspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the Log Analytics workspace"
+      }
+    },
+    "enableUeba": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Whether or not UEBA should be enabled"
+      }
+    },
+    "identityProviders": {
+      "type": "array",
+      "defaultValue": [ "AzureActiveDirectory" ],
+      "metadata": {
+        "description": "Array of identity providers to sync with UEBA. Valid values: 'ActiveDirectory', 'AzureActiveDirectory'."
+      }
+    },
+    "enableDiagnostics": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "settingName": {
+      "type": "string",
+      "defaultValue": "HealthSettings"
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.SecurityInsights/onboardingStates",
+      "apiVersion": "2024-03-01",
+      "name": "default",
+      "scope": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+      "properties": {}
+    },
+    {
+      "condition": "[and(parameters('enableUeba'), greater(length(parameters('identityProviders')), 0))]",
+      "type": "Microsoft.SecurityInsights/settings",
+      "apiVersion": "2022-12-01-preview",
+      "name": "EntityAnalytics",
+      "kind": "EntityAnalytics",
+      "scope": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+      "properties": {
+        "entityProviders": "[parameters('identityProviders')]"
+      },
+      "dependsOn": [
+        "Microsoft.SecurityInsights/onboardingStates/default"
+      ]
+    },
+    {
+      "condition": "[parameters('enableUeba')]",
+      "type": "Microsoft.OperationsManagement/solutions",
+      "apiVersion": "2015-11-01-preview",
+      "name": "[concat('BehaviorAnalyticsInsights','(', parameters('workspaceName'),')')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+      },
+      "plan": {
+        "name": "[concat('BehaviorAnalyticsInsights','(', parameters('workspaceName'),')')]",
+        "publisher": "Microsoft",
+        "product": "OMSGallery/BehaviorAnalyticsInsights",
+        "promotionCode": ""
+      },
+      "dependsOn": [
+        "Microsoft.SecurityInsights/onboardingStates/default"
+      ]
+    },
+    {
+      "condition": "[parameters('enableDiagnostics')]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "name": "[parameters('settingName')]",
+      "scope": "[resourceId('Microsoft.OperationalInsights/workspaces/providers', parameters('workspaceName'), 'Microsoft.SecurityInsights', 'SentinelHealth')]",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+        "logs": [
+          { "category": "Automation",     "enabled": true },
+          { "category": "DataConnectors", "enabled": true },
+          { "category": "Analytics",      "enabled": true }
+        ]
+      },
+      "dependsOn": [
+        "Microsoft.SecurityInsights/onboardingStates/default"
+      ]
+    }
+  ],
+  "outputs": {}
+}

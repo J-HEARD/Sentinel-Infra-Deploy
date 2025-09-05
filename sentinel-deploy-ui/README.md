@@ -30,7 +30,65 @@ The following data connectors can be enabled during deployment:
 
 ### Deploy via Azure Portal
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-ui%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-ui%2FcreateUiDefinition.json)
+# Sentinel Deploy UI
+
+This project provides a streamlined deployment for Azure Sentinel (Microsoft Sentinel) and its Log Analytics workspace.
+
+## Default Configuration
+
+By default, the deployment provisions:
+
+- **Pricing tier**: `PerGB2018` (Pay-as-you-go)
+- **Daily quota**: `1 GB/day`
+- **Data retention**: `730 days`
+- **Immediate purge**: Off
+- **UEBA**: Enabled
+- **Data connectors enabled**:
+  - Azure Active Directory
+  - Office 365
+  - Microsoft Defender for Cloud
+  - Microsoft 365 Defender
+  - Dynamics 365
+  - IoT
+  - Office365 Project
+  - OfficeIRM
+  - PowerBI
+  - Threat Intelligence
+- **AAD streams enabled**:
+  - AuditLogs
+  - SignInLogs
+  - RiskyUsers
+  - ServicePrincipalSignInLogs
+  - NonInteractiveUserSignInLogs
+- **Location**: `australiaeast`
+
+## Deployment
+
+### CLI (Subscription-level)
+
+```bash
+# Deploy using default parameters
+az deployment sub create \
+  --name SentinelDeploy \
+  --location australiaeast \
+  --template-file ./sentinel-deploy-ui/main.infra.bicep \
+  --parameters @./sentinel-deploy-ui/main.infra.parameters.json
+```
+
+### Custom Parameters
+
+You can override defaults inline. Example:
+
+```bash
+az deployment sub create \
+  --name SentinelDeployCustom \
+  --location australiaeast \
+  --template-file ./sentinel-deploy-ui/main.infra.bicep \
+  --parameters pricingTier=Free dataRetention=90 dailyQuota=5 enableUEBA=false
+```
+
+### Portal Button (basic)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FJ-HEARD%2FSentinel-Infra-Deploy%2Fmaster%2Fsentinel-deploy-ui%2Fazuredeploy.json)
 
 ### Deploy via Azure CLI
 

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "immediatePurgeDataOn30Days": {
+      "value": false
+    },
+    "pricingTier": {
+      "value": "PerGB2018"
+    },
+    "dailyQuota": {
+      "value": 1
+    },
+    "dataRetention": {
+      "value": 730
+    },
+    "enableUEBA": {
+      "value": true
+    },
+    "enableDataConnectors": {
+      "value": [
+        "AzureActiveDirectory",
+        "Office365",
+        "MicrosoftDefenderForCloud",
+        "Microsoft365Defender",
+        "Dynamics365",
+        "IOT",
+        "Office365Project",
+        "OfficeIRM",
+        "PowerBI",
+        "ThreatIntelligence"
+      ]
+    },
+    "aadStreams": {
+      "value": [
+        "AuditLogs",
+        "SignInLogs",
+        "RiskyUsers",
+        "ServicePrincipalSignInLogs",
+        "NonInteractiveUserSignInLogs"
+      ]
+    },
+    "location": {
+      "value": "australiaeast"
+    }
+  }
+}
